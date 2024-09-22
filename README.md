@@ -29,6 +29,19 @@ To get started with `homebridge-comed-hourlypricing`:
   * Install `homebridge-comed-hourlypricing` using the Homebridge webUI. Make sure you make `homebridge-comed-hourlypricing` a child bridge for the best experience.
   * That's it. Enjoy!
 
+  <h5>Notes</h5>
+    Things to keep in mind regarding the ComEd Hourly Pricing API:
+    <ul dir="auto">
+      <li>Electricity prices can turn negative, meaning the utility is paying you to consume electricity. The ambient light sensor in HomeKit doesn't permit values lower than <code>0.0001</code> and this plugin will reflect zero-or-below prices as <code>0.0001</code></li>
+      <li>Creating automations in HomeKit using the ambient light sensor cannot be easily done in the Home app (as of iOS 18), but can be easily done using alternative HomeKit management apps like Eve Home, Home+, and Controller for HomeKit.</li>
+    </ul>
+
+<A NAME="notes"></A>
+> [!IMPORTANT]
+> Things to keep in mind regarding the ComEd Hourly Pricing API:
+> * Electricity prices can turn negative, meaning the utility is paying you to consume electricity. The ambient light sensor in HomeKit doesn't permit values lower than `0.0001` and this plugin will reflect zero-or-below prices as `0.0001`.
+> * Creating automations in HomeKit using the ambient light sensor cannot be easily done in the Home app (as of iOS 18), but can be easily done using alternative HomeKit management apps like Eve Home, Home+, and Controller for HomeKit.
+
 ## Plugin Development Dashboard
 This is mostly of interest to the true developer nerds amongst us.
 

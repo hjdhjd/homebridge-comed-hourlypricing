@@ -95,6 +95,13 @@
       </li>
     </ul>
 
+  <h5>Notes</h5>
+    Things to keep in mind regarding the ComEd Hourly Pricing API:
+    <ul dir="auto">
+      <li>Electricity prices can turn negative, meaning the utility is paying you to consume electricity. The ambient light sensor in HomeKit doesn't permit values lower than <code>0.0001</code> and this plugin will reflect zero-or-below prices as <code>0.0001</code>.</li>
+      <li>Creating automations in HomeKit using the ambient light sensor cannot be easily done in the Home app (as of iOS 18), but can be easily done using alternative HomeKit management apps like Eve Home, Home+, and Controller for HomeKit.</li>
+    </ul>
+
   <h5>Support</h5>
     <ul>
       <li>
