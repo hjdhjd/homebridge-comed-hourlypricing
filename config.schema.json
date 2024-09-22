@@ -1,0 +1,113 @@
+{
+  "pluginAlias": "ComEd Hourly Pricing",
+  "pluginType": "platform",
+  "singular": true,
+  "customUi": true,
+  "headerDisplay": "[homebridge-comed-hourlypricing](https://github.com/hjdhjd/homebridge-comed-hourlypricing) provides HomeKit support for the ComEd Hourly Pricing API.",
+  "footerDisplay": "See the [homebridge-comed-hourlypricing developer page](https://github.com/hjdhjd/homebridge-comed-hourlypricing) for detailed documentation, including [feature options](https://github.com/hjdhjd/homebridge-comed-hourlypricing#feature-options).",
+  "schema": {
+    "type": "object",
+    "properties": {
+
+      "debug": {
+        "title": "Debug Logging",
+        "type": "boolean",
+        "required": false,
+        "description": "Logging verbosity for debugging. Default: false."
+      },
+
+      "mqttTopic": {
+        "type": "string",
+        "title": "MQTT Base Topic",
+        "required": false,
+        "placeholder": "e.g. comedhourly",
+        "description": "The base MQTT topic to publish to. Default: comedhourly."
+      },
+
+      "mqttUrl": {
+        "type": "string",
+        "title": "MQTT Broker URL",
+        "required": false,
+        "format": "uri",
+        "placeholder": "e.g. mqtt://1.2.3.4",
+        "description": "URL for the MQTT broker you'd like to publish event messages to. Default: None."
+      },
+
+      "name": {
+        "title": "Plugin Name",
+        "type": "string",
+        "required": true,
+        "default": "ComEd Hourly Pricing",
+        "description": "Name to use for Homebridge logging purposes. Default: ComEd Hourly Pricing."
+      },
+
+      "options": {
+        "title": "Feature Options",
+        "type": "array",
+
+        "items": {
+          "type": "string",
+          "title": "Feature Option",
+          "required": false,
+          "description": "Enter only one option per entry. Use the feature options webUI tab above unless you know what you're doing.",
+          "placeholder": "e.g. Log.API"
+        }
+      }
+    }
+  },
+
+  "layout": [
+    {
+      "type": "section",
+      "title": "Plugin Feature Options (Optional)",
+      "expandable": true,
+      "expanded": false,
+      "items": [
+        {
+          "key": "options",
+          "type": "array",
+          "orderable": true,
+          "title": " ",
+          "description": "Use the feature options webUI tab above instead of manually configuring feature options here.",
+          "buttonText": "Add Feature Option",
+          "items": [
+            "options[]"
+          ]
+        }
+      ]
+    },
+
+    {
+      "type": "section",
+      "title": "MQTT Settings (Optional)",
+      "expandable": true,
+      "expanded": false,
+      "items": [
+        {
+          "description": "MQTT support will only be enabled if an MQTT broker URL is specified below.",
+          "items": [
+            "mqttUrl",
+            "mqttTopic"
+          ]
+        }
+      ]
+    },
+
+    {
+      "type": "section",
+      "title": "Advanced Settings (Optional)",
+      "expandable": true,
+      "expanded": false,
+      "items": [
+        {
+          "description": "These settings should be rarely used or needed by most people. Use these with caution.",
+          "items": [
+            "name",
+            "debug"
+          ]
+        }
+      ]
+    }
+
+  ]
+}

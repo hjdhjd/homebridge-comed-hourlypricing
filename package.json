@@ -1,0 +1,56 @@
+{
+  "name": "homebridge-comed-hourlypricing",
+  "displayName": "Homebridge ComEd Hourly Pricing",
+  "version": "1.0.0",
+  "description": "HomeKit integration for ComEd Hourly Pricing customers.",
+  "license": "ISC",
+  "author": {
+    "name": "HJD",
+    "url": "https://github.com/hjdhjd"
+  },
+  "homepage": "https://github.com/hjdhjd/homebridge-comed-hourlypricing#readme",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/hjdhjd/homebridge-comed-hourlypricing.git"
+  },
+  "bugs": {
+    "url": "https://github.com/hjdhjd/homebridge-comed-hourlypricing/issues"
+  },
+  "type": "module",
+  "engines": {
+    "homebridge": ">=1.8.0 || >=2.0.0",
+    "node": ">=18.0"
+  },
+  "main": "dist/index.js",
+  "scripts": {
+    "prebuild": "npm run clean && npm run build-ui",
+    "build": "tsc",
+    "build-ui": "shx mkdir -p homebridge-ui/public/lib && shx cp \"node_modules/homebridge-plugin-utils/dist/ui/**/*.@(js|mjs){,.map}\" homebridge-ui/public/lib",
+    "clean": "shx rm -rf dist homebridge-ui/public/lib",
+    "prelint": "npm run build-ui",
+    "lint": "eslint --max-warnings=${ESLINT_MAX_WARNINGS:-\"-1\"} eslint.config.mjs src/**.ts homebridge-ui/*.js homebridge-ui/public/**/*.mjs",
+    "postpublish": "npm run clean",
+    "prepublishOnly": "npm run lint && npm run build"
+  },
+  "keywords": [
+    "comed",
+    "electricity",
+    "homebridge",
+    "homebridge-plugin",
+    "pricing"
+  ],
+  "devDependencies": {
+    "@stylistic/eslint-plugin": "^2.8.0",
+    "@types/node": "^22.5.5",
+    "eslint": "^9.11.0",
+    "homebridge": "^1.8.4",
+    "shx": "^0.3.4",
+    "typescript": "^5.6.2",
+    "typescript-eslint": "^8.6.0"
+  },
+  "dependencies": {
+    "@adobe/fetch": "^4.1.9",
+    "@homebridge/plugin-ui-utils": "^1.0.3",
+    "homebridge-plugin-utils": "^1.8.1"
+  }
+}
