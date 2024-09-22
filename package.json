@@ -1,7 +1,7 @@
 {
   "name": "homebridge-comed-hourlypricing",
   "displayName": "Homebridge ComEd Hourly Pricing",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "HomeKit integration for ComEd Hourly Pricing customers.",
   "license": "ISC",
   "author": {
