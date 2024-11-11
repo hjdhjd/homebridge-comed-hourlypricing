@@ -9,3 +9,10 @@ export interface ComEdHourlyPricing {
   millisUTC: string,
   price: string
 }
+
+// ComEd Hourly Pricing reserved names.
+export enum ComEdReservedNames {
+
+  // Manage our contact sensor types.
+  CONTACT_SENSOR_PRICE_HIGH_AUTOMATION = "Contact.Sensor.Price.High.Automation"
+}

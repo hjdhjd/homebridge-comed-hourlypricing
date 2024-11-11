@@ -3,11 +3,11 @@
  * comed-lightsensor.ts: ComEd Hourly Pricing light sensor.
  */
 import { API, HAP, PlatformAccessory } from "homebridge";
-import { COMED_HOURLY_API_JITTER, COMED_HOURLY_API_POLLING_INTERVAL, COMED_HOURLY_API_RETRY_INTERVAL } from "./settings.js";
-import { HomebridgePluginLogging, acquireService, retry, sleep } from "homebridge-plugin-utils";
+import { COMED_HOURLY_API_JITTER, COMED_HOURLY_API_POLLING_INTERVAL, COMED_HOURLY_API_RETRY_INTERVAL, COMED_HOURLY_HIGH_PRICE_THESHOLD } from "./settings.js";
+import { ComEdHourlyPricing, ComEdReservedNames } from "./comed-types.js";
+import { HomebridgePluginLogging, acquireService, retry, sleep, validService } from "homebridge-plugin-utils";
 import { ComEdHourlyOptions } from "./comed-options.js";
 import { ComEdHourlyPlatform } from "./comed-platform.js";
-import { ComEdHourlyPricing } from "./comed-types.js";
 import util from "node:util";
 
 const COMED_HOURLY_SERIAL = "Current Hour Average";
@@ -15,6 +15,8 @@ const COMED_HOURLY_SERIAL = "Current Hour Average";
 // Device-specific options and settings.
 interface ComEdHourlyHints {
 
+  automationSensor: boolean,
+  automationThreshold: number,
   log: boolean
 }
 
@@ -48,19 +50,23 @@ export class ComEdHourlyLightSensor {
       warn: (message: string, ...parameters: unknown[]): void => platform.log.warn(util.format(this.name + ": " + message, ...parameters))
     };
 
-    this.configureDevice();
+    void this.configureDevice();
   }
 
   // Configure an ambient light sensor accessory for HomeKit.
-  private configureDevice(): void {
+  private async configureDevice(): Promise<void> {
 
     // Clean out the context object.
     this.accessory.context = {};
+
+    // Initialize our price.
+    await this.getPrice();
 
     // Configure ourselves.
     this.configureHints();
     this.configureInfo();
     this.configureLightSensor();
+    this.configureAutomationSensor();
     this.configureMqtt();
 
     // Kickoff our state updates.
@@ -70,6 +76,8 @@ export class ComEdHourlyLightSensor {
   // Configure controller-specific settings.
   private configureHints(): boolean {
 
+    this.hints.automationSensor = this.hasFeature("Automation.Sensor.High");
+    this.hints.automationThreshold = this.getFeatureFloat("Automation.Sensor.High.Threshold") ?? COMED_HOURLY_HIGH_PRICE_THESHOLD;
     this.hints.log = this.hasFeature("Log.API");
 
     return true;
@@ -121,6 +129,47 @@ export class ComEdHourlyLightSensor {
     return true;
   }
 
+  // Configure a contact sensor to automate high electricity price triggers.
+  private configureAutomationSensor(): boolean {
+
+    // Validate whether we should have this service enabled.
+    if(!validService(this.accessory, this.hap.Service.ContactSensor, () => {
+
+      // Have we disabled the automation contact sensor?
+      if(!this.hints.automationSensor) {
+
+        return false;
+      }
+
+      return true;
+    }, ComEdReservedNames.CONTACT_SENSOR_PRICE_HIGH_AUTOMATION)) {
+
+      return false;
+    }
+
+    // Acquire the service.
+    const service = acquireService(this.hap, this.accessory, this.hap.Service.ContactSensor, this.name + " High",
+      ComEdReservedNames.CONTACT_SENSOR_PRICE_HIGH_AUTOMATION);
+
+    if(!service) {
+
+      this.log.error("Unable to add the high price automation contact sensor.");
+
+      return false;
+    }
+
+    // Return the current state of the price. We're on if we are over our configured price threshold.
+    service.getCharacteristic(this.hap.Characteristic.ContactSensorState)?.onGet(() => this.isPriceHigh);
+
+    // Initialize the contact sensor.
+    service.updateCharacteristic(this.hap.Characteristic.ContactSensorState, this.isPriceHigh);
+
+    // Inform the user.
+    this.log.info("Enabling the high price automation contact sensor with a threshold of %s¢.", this.hints.automationThreshold.toFixed(2));
+
+    return true;
+  }
+
   // Update the HomeKit light sensor state with the current price from the ComEd Hourly Pricing API.
   private async updateState(): Promise<void> {
 
@@ -139,8 +188,10 @@ export class ComEdHourlyLightSensor {
         value = 0.0001;
       }
 
-      // Update our sensor with the new price.
+      // Update with the new price.
       this.accessory.getService(this.hap.Service.LightSensor)?.updateCharacteristic(this.hap.Characteristic.CurrentAmbientLightLevel, value);
+      this.accessory.getServiceById(this.hap.Service.ContactSensor, ComEdReservedNames.CONTACT_SENSOR_PRICE_HIGH_AUTOMATION)
+        ?.updateCharacteristic(this.hap.Characteristic.ContactSensorState, this.isPriceHigh);
 
       // Publish our status to MQTT if configured to do so.
       this.platform.mqtt?.publish(COMED_HOURLY_SERIAL, "price", this.statusJson);
@@ -162,7 +213,7 @@ export class ComEdHourlyLightSensor {
     // Get the current hourly price.
     const response = await this.platform.retrieve({ type: "currenthouraverage" });
 
-    // Not found, let's retry again.
+    // Not found, we're done.
     if(!response) {
 
       return false;
@@ -182,10 +233,32 @@ export class ComEdHourlyLightSensor {
     return true;
   }
 
+  // Utility function to return a floating point configuration parameter on a device.
+  public getFeatureFloat(option: string): number | undefined {
+
+    return this.platform.featureOptions.getFloat(option);
+  }
+
   // Utility for checking feature options on a device.
   private hasFeature(option: string): boolean {
 
     return this.platform.featureOptions.test(option);
+  }
+
+  // Utility to return whether we're over our high price threshold.
+  private get isPriceHigh(): boolean {
+
+    // Convert the price from a string to a number.
+    const value = parseFloat(this.status.price);
+
+    // Address NaN - we assume the price is low.
+    if(value !== value) {
+
+      return false;
+    }
+
+    // Compare and return.
+    return value > this.hints.automationThreshold;
   }
 
   // Utility to return our status as a JSON for MQTT.
@@ -200,6 +273,6 @@ export class ComEdHourlyLightSensor {
     const name = this.accessory.getService(this.hap.Service.LightSensor)?.getCharacteristic(this.hap.Characteristic.Name).value as string;
 
     // If we don't have a name for the sensor, return a sane default.
-    return name?.length ? name : "ComEd Current Hour Average Price";
+    return name?.length ? name : "ComEd Electricity Price";
   }
 }

@@ -33,7 +33,15 @@ All feature options can be set at any scope level, or at multiple scope levels. 
 ### <A NAME="reference"></A>Feature Options Reference
 Feature options provide a rich mechanism for tailoring your `homebridge-comed-hourlypricing` experience. The reference below is divided into functional category groups:
 
+ * [Automation](#automation): Automation feature options.
  * [Log](#log): Logging feature options.
+
+#### <A NAME="automation"></A>Automation feature options.
+
+| Option                                           | Description
+|--------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+| `Automation.Sensor.High`                         | High price automation contact sensor. **(default: disabled)**.
+| `Automation.Sensor.High.Threshold<I>.Value</I>`  | High price threshold, in cents. **(default: 5)**.
 
 #### <A NAME="log"></A>Logging feature options.
 

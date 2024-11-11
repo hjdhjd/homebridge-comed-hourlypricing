@@ -6,8 +6,8 @@ import { ALPNProtocol, AbortError, FetchError, Request, RequestOptions, Response
 import { API, APIEvent, DynamicPlatformPlugin, HAP, Logging, PlatformAccessory, PlatformConfig } from "homebridge";
 import { COMED_HOURLY_API_TIMEOUT, COMED_HOURLY_MQTT_TOPIC, PLATFORM_NAME, PLUGIN_NAME  } from "./settings.js";
 import { ComEdHourlyOptions, featureOptionCategories, featureOptions } from "./comed-options.js";
+import { FeatureOptions, Nullable } from "homebridge-plugin-utils";
 import { ComEdHourlyLightSensor } from "./comed-lightsensor.js";
-import { FeatureOptions } from "homebridge-plugin-utils";
 import { MqttClient } from "homebridge-plugin-utils";
 import util from "node:util";
 
@@ -21,7 +21,7 @@ export class ComEdHourlyPlatform implements DynamicPlatformPlugin {
   private fetch: (url: string | Request, options?: RequestOptions) => Promise<Response>;
   public readonly hap: HAP;
   public readonly log: Logging;
-  public readonly mqtt: MqttClient | null;
+  public readonly mqtt: Nullable<MqttClient>;
 
   constructor(log: Logging, config: PlatformConfig, api: API) {
 
@@ -54,6 +54,10 @@ export class ComEdHourlyPlatform implements DynamicPlatformPlugin {
 
       this.mqtt = new MqttClient(this.config.mqttUrl, this.config.mqttTopic, this.log);
     }
+
+    // Inform the user.
+    this.log.info("The current five-minute average price for ComEd's Hourly Pricing program will be shown as an ambient light sensor, with the light value containing" +
+      " the current price.");
 
     this.log.debug("Debug logging on. Expect a lot of data.");
 
@@ -93,9 +97,6 @@ export class ComEdHourlyPlatform implements DynamicPlatformPlugin {
       this.accessories.push(accessory);
     }
 
-    // Inform the user.
-    this.log.info("Configuring the current hour average price sensor.");
-
     // Add it to our list of configured devices.
     this.configuredDevices[uuid] = new ComEdHourlyLightSensor(this, accessory);
 
@@ -118,7 +119,7 @@ export class ComEdHourlyPlatform implements DynamicPlatformPlugin {
   }
 
   // Communicate HTTP requests with the ComEd Hourly Pricing API.
-  public async retrieve(params: Record<string, string>, isRetry = false): Promise<Response | null> {
+  public async retrieve(params: Record<string, string>, isRetry = false): Promise<Nullable<Response>> {
 
     // Catch potential server-side issues:
     //
