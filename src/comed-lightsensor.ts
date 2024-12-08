@@ -5,7 +5,7 @@
 import { API, HAP, PlatformAccessory } from "homebridge";
 import { COMED_HOURLY_API_JITTER, COMED_HOURLY_API_POLLING_INTERVAL, COMED_HOURLY_API_RETRY_INTERVAL, COMED_HOURLY_HIGH_PRICE_THESHOLD } from "./settings.js";
 import { ComEdHourlyPricing, ComEdReservedNames } from "./comed-types.js";
-import { HomebridgePluginLogging, acquireService, retry, sleep, validService } from "homebridge-plugin-utils";
+import { HomebridgePluginLogging, Nullable, acquireService, retry, sleep, validService } from "homebridge-plugin-utils";
 import { ComEdHourlyOptions } from "./comed-options.js";
 import { ComEdHourlyPlatform } from "./comed-platform.js";
 import util from "node:util";
@@ -234,7 +234,7 @@ export class ComEdHourlyLightSensor {
   }
 
   // Utility function to return a floating point configuration parameter on a device.
-  public getFeatureFloat(option: string): number | undefined {
+  public getFeatureFloat(option: string): Nullable<number | undefined> {
 
     return this.platform.featureOptions.getFloat(option);
   }

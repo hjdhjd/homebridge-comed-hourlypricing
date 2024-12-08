@@ -25,11 +25,10 @@ export const featureOptionCategories = [
 // Individual feature options, broken out by category.
 export const featureOptions: { [index: string]: FeatureOptionEntry[] } = {
 
-  /* eslint-disable @stylistic/max-len */
   "Automation": [
 
     { default: false, description: "High price automation contact sensor.", name: "Sensor.High" },
-    { default: false, defaultValue: COMED_HOURLY_HIGH_PRICE_THESHOLD, description: "High price threshold, in cents.", group: "Sensor.High", name: "Sensor.High.Threshold" }
+    { default: true, defaultValue: COMED_HOURLY_HIGH_PRICE_THESHOLD, description: "High price threshold, in cents.", group: "Sensor.High", name: "Sensor.High.Threshold" }
   ],
 
   // Logging options.
@@ -37,5 +36,4 @@ export const featureOptions: { [index: string]: FeatureOptionEntry[] } = {
 
     { default: false, description: "Log API requests.", name: "API" }
   ]
-  /* eslint-enable @stylistic/max-len */
 };
