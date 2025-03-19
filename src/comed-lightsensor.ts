@@ -1,4 +1,4 @@
-/* Copyright(C) 2017-2024, HJD (https://github.com/hjdhjd). All rights reserved.
+/* Copyright(C) 2017-2025, HJD (https://github.com/hjdhjd). All rights reserved.
  *
  * comed-lightsensor.ts: ComEd Hourly Pricing light sensor.
  */
@@ -208,7 +208,7 @@ export class ComEdHourlyLightSensor {
   }
 
   // Retrieve the current price from the ComEd Hourly Pricing API.
-  private async getPrice(): Promise<boolean> {
+  private async getPrice(retry = true): Promise<boolean> {
 
     // Get the current hourly price.
     const response = await this.platform.retrieve({ type: "currenthouraverage" });
@@ -227,7 +227,14 @@ export class ComEdHourlyLightSensor {
       this.log.debug(util.inspect(this.status, { colors: true, sorted: true }));
     } catch(error) {
 
+      // Retry once in case of API issues.
+      if(retry) {
+
+        return this.getPrice(false);
+      }
+
       this.log.error("Unable to retrieve the current ComEd hourly price: %s", util.inspect(error, { colors: true, sorted: true }));
+      this.log.error("Current status: %s", this.status);
     }
 
     return true;
