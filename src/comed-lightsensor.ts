@@ -2,12 +2,12 @@
  *
  * comed-lightsensor.ts: ComEd Hourly Pricing light sensor.
  */
-import { API, HAP, PlatformAccessory } from "homebridge";
+import type { API, HAP, PlatformAccessory } from "homebridge";
 import { COMED_HOURLY_API_JITTER, COMED_HOURLY_API_POLLING_INTERVAL, COMED_HOURLY_API_RETRY_INTERVAL, COMED_HOURLY_HIGH_PRICE_THESHOLD } from "./settings.js";
-import { ComEdHourlyPricing, ComEdReservedNames } from "./comed-types.js";
-import { HomebridgePluginLogging, Nullable, acquireService, retry, sleep, validService } from "homebridge-plugin-utils";
-import { ComEdHourlyOptions } from "./comed-options.js";
-import { ComEdHourlyPlatform } from "./comed-platform.js";
+import { type ComEdHourlyPricing, ComEdReservedNames } from "./comed-types.js";
+import { type HomebridgePluginLogging, type Nullable, acquireService, retry, sleep, validService } from "homebridge-plugin-utils";
+import type { ComEdHourlyOptions } from "./comed-options.js";
+import type { ComEdHourlyPlatform } from "./comed-platform.js";
 import util from "node:util";
 
 const COMED_HOURLY_SERIAL = "Current Hour Average";
@@ -114,7 +114,7 @@ export class ComEdHourlyLightSensor {
   private configureLightSensor(): boolean {
 
     // Acquire the service.
-    const service = acquireService(this.hap, this.accessory, this.hap.Service.LightSensor, this.name);
+    const service = acquireService(this.accessory, this.hap.Service.LightSensor, this.name);
 
     if(!service) {
 
@@ -148,7 +148,7 @@ export class ComEdHourlyLightSensor {
     }
 
     // Acquire the service.
-    const service = acquireService(this.hap, this.accessory, this.hap.Service.ContactSensor, this.name + " High",
+    const service = acquireService(this.accessory, this.hap.Service.ContactSensor, this.name + " High",
       ComEdReservedNames.CONTACT_SENSOR_PRICE_HIGH_AUTOMATION);
 
     if(!service) {
@@ -208,7 +208,7 @@ export class ComEdHourlyLightSensor {
   }
 
   // Retrieve the current price from the ComEd Hourly Pricing API.
-  private async getPrice(retry = true): Promise<boolean> {
+  private async getPrice(): Promise<boolean> {
 
     // Get the current hourly price.
     const response = await this.platform.retrieve({ type: "currenthouraverage" });
@@ -221,20 +221,13 @@ export class ComEdHourlyLightSensor {
 
     try {
 
-      this.status = (await response.json() as ComEdHourlyPricing[])[0];
+      this.status = (await response.body.json() as ComEdHourlyPricing[])[0];
 
       this.log.debug("Status updated.");
       this.log.debug(util.inspect(this.status, { colors: true, sorted: true }));
     } catch(error) {
 
-      // Retry once in case of API issues.
-      if(retry) {
-
-        return this.getPrice(false);
-      }
-
-      this.log.error("Unable to retrieve the current ComEd hourly price: %s", util.inspect(error, { colors: true, sorted: true }));
-      this.log.error("Current status: %s", this.status);
+      this.log.error("Unable to retrieve the current ComEd hourly price: %s", util.inspect(error, { colors: true, depth: null, sorted: true }));
     }
 
     return true;

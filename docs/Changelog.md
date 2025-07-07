@@ -2,6 +2,9 @@
 
 All notable changes to this project will be documented in this file. This project uses [semantic versioning](https://semver.org/).
 
+## 1.1.3 (2025-07-06)
+  * Housekeeping.
+
 ## 1.1.2 (2025-03-19)
   * Improve API error recovery.
   * Housekeeping.

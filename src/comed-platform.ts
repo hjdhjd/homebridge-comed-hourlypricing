@@ -2,13 +2,15 @@
  *
  * comed-platform.ts: homebridge-comed-hourly platform class.
  */
-import { ALPNProtocol, AbortError, FetchError, Request, RequestOptions, Response, context, timeoutSignal } from "@adobe/fetch";
-import { API, APIEvent, DynamicPlatformPlugin, HAP, Logging, PlatformAccessory, PlatformConfig } from "homebridge";
+import type { API, DynamicPlatformPlugin, HAP, Logging, PlatformAccessory, PlatformConfig } from "homebridge";
 import { COMED_HOURLY_API_TIMEOUT, COMED_HOURLY_MQTT_TOPIC, PLATFORM_NAME, PLUGIN_NAME  } from "./settings.js";
-import { ComEdHourlyOptions, featureOptionCategories, featureOptions } from "./comed-options.js";
-import { FeatureOptions, Nullable } from "homebridge-plugin-utils";
+import { type ComEdHourlyOptions, featureOptionCategories, featureOptions } from "./comed-options.js";
+import { type Dispatcher, Pool, interceptors, request, setGlobalDispatcher } from "undici";
+import { FeatureOptions, type Nullable } from "homebridge-plugin-utils";
+import { APIEvent } from "homebridge";
 import { ComEdHourlyLightSensor } from "./comed-lightsensor.js";
 import { MqttClient } from "homebridge-plugin-utils";
+import { STATUS_CODES } from "node:http";
 import util from "node:util";
 
 export class ComEdHourlyPlatform implements DynamicPlatformPlugin {
@@ -18,7 +20,6 @@ export class ComEdHourlyPlatform implements DynamicPlatformPlugin {
   public readonly featureOptions: FeatureOptions;
   public config!: ComEdHourlyOptions;
   public readonly configuredDevices: { [index: string]: ComEdHourlyLightSensor };
-  private fetch: (url: string | Request, options?: RequestOptions) => Promise<Response>;
   public readonly hap: HAP;
   public readonly log: Logging;
   public readonly mqtt: Nullable<MqttClient>;
@@ -29,7 +30,6 @@ export class ComEdHourlyPlatform implements DynamicPlatformPlugin {
     this.api = api;
     this.configuredDevices = {};
     this.featureOptions = new FeatureOptions(featureOptionCategories, featureOptions, config?.options ?? []);
-    this.fetch = context({ alpnProtocols: [ALPNProtocol.ALPN_HTTP2], rejectUnauthorized: false, userAgent: "homebridge-comed-hourlypricing" }).fetch;
     this.hap = api.hap;
     this.log = log;
     this.log.debug = this.debug.bind(this);
@@ -48,6 +48,19 @@ export class ComEdHourlyPlatform implements DynamicPlatformPlugin {
       mqttUrl: config.mqttUrl as string,
       options: config.options as string[]
     };
+
+    // Create an interceptor that allows us to set the user agent to our liking.
+    const ua: Dispatcher.DispatcherComposeInterceptor = (dispatch) => (opts: Dispatcher.DispatchOptions, handler: Dispatcher.DispatchHandler) => {
+
+      opts.headers ??= {};
+      (opts.headers as Record<string, string>)["user-agent"] = "homebridge-comed-hourlypricing";
+
+      return dispatch(opts, handler);
+    };
+
+    // We want to enable the use of HTTP/2, accept unauthorized SSL certificates and retry a request up to three times.
+    setGlobalDispatcher(new Pool("https://hourlypricing.comed.com", { allowH2: true, clientTtl: 60 * 1000, connect: { rejectUnauthorized: false }, connections: 1 })
+      .compose(ua, interceptors.retry({ maxRetries: 3, maxTimeout: 5000, minTimeout: 1000, statusCodes: [ 400, 404, 429, 500, 502, 503, 504 ], timeoutFactor: 2 })));
 
     // Initialize MQTT, if needed.
     if(this.config.mqttUrl) {
@@ -119,7 +132,7 @@ export class ComEdHourlyPlatform implements DynamicPlatformPlugin {
   }
 
   // Communicate HTTP requests with the ComEd Hourly Pricing API.
-  public async retrieve(params: Record<string, string>, isRetry = false): Promise<Nullable<Response>> {
+  public async retrieve(params: Record<string, string>): Promise<Nullable<Dispatcher.ResponseData<unknown>>> {
 
     // Catch potential server-side issues:
     //
@@ -131,10 +144,12 @@ export class ComEdHourlyPlatform implements DynamicPlatformPlugin {
     // 503: Service temporarily unavailable.
     const isServerSideIssue = (code: number): boolean => [400, 404, 429, 500, 502, 503].includes(code);
 
-    let response: Response;
+    let response: Dispatcher.ResponseData<unknown>;
 
     // Create a signal handler to deliver the abort operation.
-    const signal = timeoutSignal(COMED_HOURLY_API_TIMEOUT * 1000);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), COMED_HOURLY_API_TIMEOUT * 1000);
+    const signal = controller.signal;
 
     const queryParams = new URLSearchParams(params);
 
@@ -144,13 +159,13 @@ export class ComEdHourlyPlatform implements DynamicPlatformPlugin {
     try {
 
       // Execute the API call.
-      response = await this.fetch(url, { signal: signal });
+      response = await request(url, { signal: signal });
 
       // Some other unknown error occurred.
-      if(!response.ok) {
+      if(!(response.statusCode >= 200) && (response.statusCode < 300)) {
 
-        this.log.error(isServerSideIssue(response.status) ? "ComEd Hourly Pricing API is temporarily unavailable." :
-          response.status.toString() + ": " + await response.text());
+        this.log.error(isServerSideIssue(response.statusCode) ? "ComEd Hourly Pricing API is temporarily unavailable." : response.statusCode.toString() + ": " +
+          STATUS_CODES[response.statusCode]);
 
         return null;
       }
@@ -158,7 +173,7 @@ export class ComEdHourlyPlatform implements DynamicPlatformPlugin {
       return response;
     } catch(error) {
 
-      if(error instanceof AbortError) {
+      if((error instanceof DOMException) && (error.name === "AbortError")) {
 
         this.log.error("The ComEd Hourly Pricing API is taking too long to respond to a request. This error can usually be safely ignored.");
         this.log.debug("Original request was: %s", url);
@@ -166,43 +181,64 @@ export class ComEdHourlyPlatform implements DynamicPlatformPlugin {
         return null;
       }
 
-      if(error instanceof FetchError) {
+      if(error instanceof TypeError) {
 
-        switch(error.code) {
+        const cause = error.cause as NodeJS.ErrnoException;
+
+        switch(cause.code) {
 
           case "ECONNREFUSED":
-          case "ERR_HTTP2_STREAM_CANCEL":
+          case "EHOSTDOWN":
 
             this.log.error("Connection refused.");
 
             break;
 
           case "ECONNRESET":
-          case "ERR_HTTP2_STREAM_ERROR":
+          case "UND_ERR_DESTROYED":
 
-            // Retry on connection reset, but no more than once.
-            if(!isRetry) {
+            this.log.error("Connection has been reset.");
 
-              return this.retrieve(params, true);
-            }
+            break;
 
-            this.log.error("Network connection to the ComEd Hourly Pricing API has been reset.");
+          case "ENOTFOUND":
+
+            this.log.error("Hostname or IP address not found. Please ensure you're connected to the Internet.");
+
+            break;
+
+          case "UND_ERR_CONNECT_TIMEOUT":
+
+            this.log.error("Connection timed out.");
+
+            break;
+
+          case "UND_ERR_REQ_RETRY":
+
+            this.log.error("Unable to connect to the ComEd Hourly Pricing API. This is usually temporary and will retry automatically.");
 
             break;
 
           default:
 
-            this.log.error("Error: %s - %s.", error.code, error.message);
+            // If we're logging when we have an error, do so.
+            this.log.error("Error: %s | %s.", cause.code, cause.message);
+            this.log.error(util.inspect(error, { colors: true, depth: null, sorted: true}));
 
             break;
         }
+      } else {
+
+        this.log.error(util.inspect(error, { colors: true, depth: null, sorted: true}));
       }
+
+      this.log.error(util.inspect(error, { colors: true, depth: null, sorted: true}));
 
       return null;
     } finally {
 
       // Clear out our response timeout if needed.
-      signal.clear();
+      clearTimeout(timeout);
     }
   }
 

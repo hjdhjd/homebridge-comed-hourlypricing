@@ -4,7 +4,7 @@
  */
 
 import { COMED_HOURLY_HIGH_PRICE_THESHOLD } from "./settings.js";
-import { FeatureOptionEntry } from "homebridge-plugin-utils";
+import type { FeatureOptionEntry } from "homebridge-plugin-utils";
 
 // Plugin configuration options.
 export type ComEdHourlyOptions = {
