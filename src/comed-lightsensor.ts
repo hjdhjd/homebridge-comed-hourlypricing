@@ -208,7 +208,7 @@ export class ComEdHourlyLightSensor {
   }
 
   // Retrieve the current price from the ComEd Hourly Pricing API.
-  private async getPrice(): Promise<boolean> {
+  private async getPrice(isRetry = false): Promise<boolean> {
 
     // Get the current hourly price.
     const response = await this.platform.retrieve({ type: "currenthouraverage" });
@@ -227,7 +227,18 @@ export class ComEdHourlyLightSensor {
       this.log.debug(util.inspect(this.status, { colors: true, sorted: true }));
     } catch(error) {
 
-      this.log.error("Unable to retrieve the current ComEd hourly price: %s", util.inspect(error, { colors: true, depth: null, sorted: true }));
+      if(error instanceof SyntaxError) {
+
+        this.log.error("Received invalid data from the ComEd Hourly Pricing API. Will retry shortly.");
+
+        if(!isRetry) {
+
+          return this.getPrice(true);
+        }
+      } else {
+
+        this.log.error("Unable to retrieve the current ComEd hourly price: %s", util.inspect(error, { colors: true, depth: null, sorted: true }));
+      }
     }
 
     return true;

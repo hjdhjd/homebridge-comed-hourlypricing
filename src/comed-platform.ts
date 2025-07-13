@@ -5,7 +5,7 @@
 import type { API, DynamicPlatformPlugin, HAP, Logging, PlatformAccessory, PlatformConfig } from "homebridge";
 import { COMED_HOURLY_API_TIMEOUT, COMED_HOURLY_MQTT_TOPIC, PLATFORM_NAME, PLUGIN_NAME  } from "./settings.js";
 import { type ComEdHourlyOptions, featureOptionCategories, featureOptions } from "./comed-options.js";
-import { type Dispatcher, Pool, interceptors, request, setGlobalDispatcher } from "undici";
+import { type Dispatcher, Pool, errors, interceptors, request, setGlobalDispatcher } from "undici";
 import { FeatureOptions, type Nullable } from "homebridge-plugin-utils";
 import { APIEvent } from "homebridge";
 import { ComEdHourlyLightSensor } from "./comed-lightsensor.js";
@@ -142,7 +142,7 @@ export class ComEdHourlyPlatform implements DynamicPlatformPlugin {
     // 500: Internal server error.
     // 502: Bad gateway.
     // 503: Service temporarily unavailable.
-    const isServerSideIssue = (code: number): boolean => [400, 404, 429, 500, 502, 503].includes(code);
+    const serverErrors = new Set([400, 404, 429, 500, 502, 503]);
 
     let response: Dispatcher.ResponseData<unknown>;
 
@@ -164,7 +164,7 @@ export class ComEdHourlyPlatform implements DynamicPlatformPlugin {
       // Some other unknown error occurred.
       if(!(response.statusCode >= 200) && (response.statusCode < 300)) {
 
-        this.log.error(isServerSideIssue(response.statusCode) ? "ComEd Hourly Pricing API is temporarily unavailable." : response.statusCode.toString() + ": " +
+        this.log.error(serverErrors.has(response.statusCode) ? "ComEd Hourly Pricing API is temporarily unavailable." : response.statusCode.toString() + ": " +
           STATUS_CODES[response.statusCode]);
 
         return null;
@@ -173,10 +173,49 @@ export class ComEdHourlyPlatform implements DynamicPlatformPlugin {
       return response;
     } catch(error) {
 
+      // We aborted the connection.
       if((error instanceof DOMException) && (error.name === "AbortError")) {
 
         this.log.error("The ComEd Hourly Pricing API is taking too long to respond to a request. This error can usually be safely ignored.");
         this.log.debug("Original request was: %s", url);
+
+        return null;
+      }
+
+      // Connection timed out.
+      if(error instanceof errors.ConnectTimeoutError) {
+
+        switch(error.code) {
+
+          case "UND_ERR_CONNECT_TIMEOUT":
+
+            this.log.error("Connection timed out.");
+
+            break;
+
+          default:
+
+            break;
+        }
+
+        return null;
+      }
+
+      // We destroyed the pool due to a reset event and our inflight connections are failing.
+      if(error instanceof errors.RequestRetryError) {
+
+        switch(error.code) {
+
+          case "UND_ERR_REQ_RETRY":
+
+            this.log.error("Unable to connect to the ComEd Hourly Pricing API. This is usually temporary and will retry automatically.");
+
+            break;
+
+          default:
+
+            break;
+        }
 
         return null;
       }
@@ -195,7 +234,6 @@ export class ComEdHourlyPlatform implements DynamicPlatformPlugin {
             break;
 
           case "ECONNRESET":
-          case "UND_ERR_DESTROYED":
 
             this.log.error("Connection has been reset.");
 
@@ -207,18 +245,6 @@ export class ComEdHourlyPlatform implements DynamicPlatformPlugin {
 
             break;
 
-          case "UND_ERR_CONNECT_TIMEOUT":
-
-            this.log.error("Connection timed out.");
-
-            break;
-
-          case "UND_ERR_REQ_RETRY":
-
-            this.log.error("Unable to connect to the ComEd Hourly Pricing API. This is usually temporary and will retry automatically.");
-
-            break;
-
           default:
 
             // If we're logging when we have an error, do so.
@@ -227,9 +253,8 @@ export class ComEdHourlyPlatform implements DynamicPlatformPlugin {
 
             break;
         }
-      } else {
 
-        this.log.error(util.inspect(error, { colors: true, depth: null, sorted: true}));
+        return null;
       }
 
       this.log.error(util.inspect(error, { colors: true, depth: null, sorted: true}));
