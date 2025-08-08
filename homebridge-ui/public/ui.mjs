@@ -10,8 +10,7 @@ import { webUi } from "./lib/webUi.mjs";
 // Parameters for our feature options webUI.
 const featureOptionsParams = {
 
-  getDevices: () => [],
-  hasControllers: false
+  getDevices: () => []
 };
 
 // Instantiate the webUI.

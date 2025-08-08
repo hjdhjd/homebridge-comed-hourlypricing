@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file. This project uses [semantic versioning](https://semver.org/).
 
+## 1.1.5 (2025-08-08)
+  * Improvement: new webUI.
+  * Housekeeping.
+
 ## 1.1.4 (2025-07-12)
   * Housekeeping.
 
@@ -9,7 +13,7 @@ All notable changes to this project will be documented in this file. This projec
   * Housekeeping.
 
 ## 1.1.2 (2025-03-19)
-  * Improve API error recovery.
+  * Improvement: better API error recovery.
   * Housekeeping.
 
 ## 1.1.1 (2024-12-07)
