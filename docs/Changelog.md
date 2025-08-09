@@ -2,6 +2,9 @@
 
 All notable changes to this project will be documented in this file. This project uses [semantic versioning](https://semver.org/).
 
+## 1.1.6 (2025-08-09)
+  * Housekeeping.
+
 ## 1.1.5 (2025-08-08)
   * Improvement: new webUI.
   * Housekeeping.
