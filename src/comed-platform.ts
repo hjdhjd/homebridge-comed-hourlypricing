@@ -19,12 +19,12 @@ export class ComEdHourlyPlatform implements DynamicPlatformPlugin {
   public readonly api: API;
   public readonly featureOptions: FeatureOptions;
   public config!: ComEdHourlyOptions;
-  public readonly configuredDevices: { [index: string]: ComEdHourlyLightSensor };
+  public readonly configuredDevices: { [index: string]: ComEdHourlyLightSensor | undefined };
   public readonly hap: HAP;
   public readonly log: Logging;
   public readonly mqtt: Nullable<MqttClient>;
 
-  constructor(log: Logging, config: PlatformConfig, api: API) {
+  constructor(log: Logging, config: PlatformConfig | undefined, api: API) {
 
     this.accessories = [];
     this.api = api;
@@ -44,9 +44,9 @@ export class ComEdHourlyPlatform implements DynamicPlatformPlugin {
     this.config = {
 
       debug: config.debug === true,
-      mqttTopic: (config.mqttTopic as string) ?? COMED_HOURLY_MQTT_TOPIC,
-      mqttUrl: config.mqttUrl as string,
-      options: config.options as string[]
+      mqttTopic: config.mqttTopic ?? COMED_HOURLY_MQTT_TOPIC,
+      mqttUrl: config.mqttUrl,
+      options: config.options ?? []
     };
 
     // Create an interceptor that allows us to set the user agent to our liking.
@@ -185,18 +185,7 @@ export class ComEdHourlyPlatform implements DynamicPlatformPlugin {
       // Connection timed out.
       if(error instanceof errors.ConnectTimeoutError) {
 
-        switch(error.code) {
-
-          case "UND_ERR_CONNECT_TIMEOUT":
-
-            this.log.error("Connection timed out.");
-
-            break;
-
-          default:
-
-            break;
-        }
+        this.log.error("Connection timed out.");
 
         return null;
       }
@@ -204,18 +193,7 @@ export class ComEdHourlyPlatform implements DynamicPlatformPlugin {
       // We destroyed the pool due to a reset event and our inflight connections are failing.
       if(error instanceof errors.RequestRetryError) {
 
-        switch(error.code) {
-
-          case "UND_ERR_REQ_RETRY":
-
-            this.log.error("Unable to connect to the ComEd Hourly Pricing API. This is usually temporary and will retry automatically.");
-
-            break;
-
-          default:
-
-            break;
-        }
+        this.log.error("Unable to connect to the ComEd Hourly Pricing API. This is usually temporary and will retry automatically.");
 
         return null;
       }

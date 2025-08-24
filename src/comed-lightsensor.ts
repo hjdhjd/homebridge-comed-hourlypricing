@@ -159,7 +159,7 @@ export class ComEdHourlyLightSensor {
     }
 
     // Return the current state of the price. We're on if we are over our configured price threshold.
-    service.getCharacteristic(this.hap.Characteristic.ContactSensorState)?.onGet(() => this.isPriceHigh);
+    service.getCharacteristic(this.hap.Characteristic.ContactSensorState).onGet(() => this.isPriceHigh);
 
     // Initialize the contact sensor.
     service.updateCharacteristic(this.hap.Characteristic.ContactSensorState, this.isPriceHigh);
@@ -281,7 +281,7 @@ export class ComEdHourlyLightSensor {
   // Utility function to return the name of this accessory.
   private get name(): string {
 
-    const name = this.accessory.getService(this.hap.Service.LightSensor)?.getCharacteristic(this.hap.Characteristic.Name).value as string;
+    const name = this.accessory.getService(this.hap.Service.LightSensor)?.getCharacteristic(this.hap.Characteristic.Name).value as string | undefined;
 
     // If we don't have a name for the sensor, return a sane default.
     return name?.length ? name : "ComEd Electricity Price";

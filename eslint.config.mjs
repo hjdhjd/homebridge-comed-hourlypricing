@@ -72,7 +72,7 @@ export default ts.config(
 
   {
 
-    files: [ "homebridge-ui/public/lib/webUi.mjs", "homebridge-ui/public/lib/webUi-featureoptions.mjs" ],
+    files: [ "homebridge-ui/public/lib/webUi.mjs", "homebridge-ui/public/lib/webUi-featureoptions.mjs", "homebridge-ui/public/ui.mjs" ],
 
     languageOptions: {
 
@@ -91,8 +91,10 @@ export default ts.config(
 
       globals: {
 
+        clearTimeout: "readonly",
         console: "readonly",
-        fetch: "readonly"
+        fetch: "readonly",
+        setTimeout: "readonly"
       }
     }
   }
