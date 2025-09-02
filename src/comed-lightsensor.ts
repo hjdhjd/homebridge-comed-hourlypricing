@@ -15,9 +15,9 @@ const COMED_HOURLY_SERIAL = "Current Hour Average";
 // Device-specific options and settings.
 interface ComEdHourlyHints {
 
-  automationSensor: boolean,
-  automationThreshold: number,
-  log: boolean
+  automationSensor: boolean;
+  automationThreshold: number;
+  log: boolean;
 }
 
 export class ComEdHourlyLightSensor {

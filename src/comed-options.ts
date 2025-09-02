@@ -9,10 +9,10 @@ import type { FeatureOptionEntry } from "homebridge-plugin-utils";
 // Plugin configuration options.
 export type ComEdHourlyOptions = {
 
-  debug?: boolean,
-  mqttTopic: string,
-  mqttUrl?: string,
-  options?: string[],
+  debug?: boolean;
+  mqttTopic: string;
+  mqttUrl?: string;
+  options?: string[];
 };
 
 // Feature option categories.

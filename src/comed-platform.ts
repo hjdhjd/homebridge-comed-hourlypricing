@@ -18,7 +18,7 @@ export class ComEdHourlyPlatform implements DynamicPlatformPlugin {
   private readonly accessories: PlatformAccessory[];
   public readonly api: API;
   public readonly featureOptions: FeatureOptions;
-  public config!: ComEdHourlyOptions;
+  public config: ComEdHourlyOptions;
   public readonly configuredDevices: { [index: string]: ComEdHourlyLightSensor | undefined };
   public readonly hap: HAP;
   public readonly log: Logging;
@@ -35,18 +35,12 @@ export class ComEdHourlyPlatform implements DynamicPlatformPlugin {
     this.log.debug = this.debug.bind(this);
     this.mqtt = null;
 
-    // We can't start without being configured.
-    if(!config) {
-
-      return;
-    }
-
     this.config = {
 
-      debug: config.debug === true,
-      mqttTopic: config.mqttTopic ?? COMED_HOURLY_MQTT_TOPIC,
-      mqttUrl: config.mqttUrl,
-      options: config.options ?? []
+      debug: config?.debug === true,
+      mqttTopic: config?.mqttTopic ?? COMED_HOURLY_MQTT_TOPIC,
+      mqttUrl: config?.mqttUrl,
+      options: config?.options ?? []
     };
 
     // Create an interceptor that allows us to set the user agent to our liking.

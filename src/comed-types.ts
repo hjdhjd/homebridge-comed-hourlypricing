@@ -6,8 +6,8 @@
 // ComEd Hourly Pricing.
 export interface ComEdHourlyPricing {
 
-  millisUTC: string,
-  price: string
+  millisUTC: string;
+  price: string;
 }
 
 // ComEd Hourly Pricing reserved names.
