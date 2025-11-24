@@ -1,7 +1,7 @@
 {
   "name": "homebridge-comed-hourlypricing",
   "displayName": "ComEd Hourly Pricing",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "HomeKit integration for ComEd Hourly Pricing customers.",
   "license": "ISC",
   "author": {
@@ -40,17 +40,17 @@
     "pricing"
   ],
   "devDependencies": {
-    "@stylistic/eslint-plugin": "5.3.1",
-    "@types/node": "24.3.0",
-    "eslint": "9.34.0",
-    "homebridge": "1.11.0",
+    "@stylistic/eslint-plugin": "5.6.1",
+    "@types/node": "24.10.1",
+    "eslint": "9.39.1",
+    "homebridge": "1.11.1",
     "shx": "0.4.0",
-    "typescript": "5.9.2",
-    "typescript-eslint": "8.42.0"
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.48.0"
   },
   "dependencies": {
-    "@homebridge/plugin-ui-utils": "2.1.0",
-    "homebridge-plugin-utils": "1.29.1",
-    "undici": "7.15.0"
+    "@homebridge/plugin-ui-utils": "2.1.2",
+    "homebridge-plugin-utils": "1.29.4",
+    "undici": "7.16.0"
   }
 }
