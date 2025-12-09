@@ -10,6 +10,11 @@ on:
     types: [ published ]
   workflow_dispatch:
 
+# OIDC-related permissions for trusted publishing to NPMJS.
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
 
   # Run a validation build on LTS versions of node.
